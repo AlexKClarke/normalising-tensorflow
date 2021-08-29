@@ -175,7 +175,7 @@ class AffineCoupling(tf.keras.layers.Layer):
                                             bias_initializer='zeros')
         self.activation = tf.keras.layers.LeakyReLU(alpha=0.1)
         scale = tf.zeros((1, 1, 1, input_shape[3]))
-        self.scale = tf.Variable(scale, trainable=True)
+        # self.scale = tf.Variable(scale, trainable=True)
 
     def call(self, x, direction, y=None):
         if direction == 'forward':
@@ -199,9 +199,10 @@ class AffineCoupling(tf.keras.layers.Layer):
         x = self.conv2(x)
         x = self.activation(x)
         x = self.conv3(x)
-        x = x * tf.math.exp(3*self.scale)
+        # x = x * tf.math.exp(3*self.scale)
         log_s, t = tf.split(x, num_or_size_splits=2, axis=3)
         s = tf.math.exp(log_s**2)
+        s = tf.clip_by_value(s, 1E-10, 1E10)
         return s, t
         
     def _forward(self, x, y):
@@ -255,7 +256,7 @@ class AdditiveCoupling(tf.keras.layers.Layer):
                                             bias_initializer='zeros')
         self.activation = tf.keras.layers.LeakyReLU(alpha=0.2)
         scale = tf.zeros((1, 1, 1, int(input_shape[3]/2)))
-        self.scale = tf.Variable(scale, trainable=True)
+        # self.scale = tf.Variable(scale, trainable=True)
 
     def call(self, x, direction, y=None):
         if direction == 'forward':
@@ -278,7 +279,9 @@ class AdditiveCoupling(tf.keras.layers.Layer):
         x = self.conv2(x)
         x = self.activation(x)
         x = self.conv3(x)
-        x = x * tf.math.exp(3*self.scale)
+        x = tf.clip_by_value(x, 1E-10, 1E10)
+        # x = x * tf.math.exp(3*self.scale)
+        
         return x
         
     def _forward(self, x, y):
@@ -351,7 +354,7 @@ class ExitFunction(tf.keras.layers.Layer):
                                            kernel_initializer='zeros',
                                            bias_initializer='zeros')
         scale = tf.zeros((1, 1, 1, 2*num_z_i_chans))
-        self.scale = tf.Variable(scale, trainable=True)
+        # self.scale = tf.Variable(scale, trainable=True)
 
     def call(self, x, direction, y=None, temperature=1.):
         if direction == 'forward':
@@ -369,7 +372,9 @@ class ExitFunction(tf.keras.layers.Layer):
             
     def _get_params(self, z_l, y, temperature=1.):
         if self.condition_transform: z_l = self._get_condition_transform(z_l, y)
-        params = self.conv(z_l) * tf.math.exp(3 * self.scale)
+        # params = self.conv(z_l) * tf.math.exp(3 * self.scale)
+        
+        params = self.conv(z_l)
         mean, log_std = tf.split(params, num_or_size_splits=2, axis=3)
         std = tf.math.exp(log_std) * temperature
         return mean, std

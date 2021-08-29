@@ -92,7 +92,7 @@ class Model(tf.keras.Model):
         
 #Test code:
 if __name__ == "__main__":
-    batch_size = 64
+    batch_size = 32
     num_epochs = 5000
     condition_transform = True
     
@@ -102,8 +102,4 @@ if __name__ == "__main__":
     model.fit(batch_size, num_epochs)
     model.plot_examples(temperature=0.7)
 
-
-    
-
-
-
+        
