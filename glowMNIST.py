@@ -14,6 +14,7 @@ class Model(tf.keras.Model):
         self.init_check = False
         
         self.num_init_samples = 512
+        self.num_test_samples = 32
         
         
     def input_data(self, train_set, val_set, test_set):
@@ -41,6 +42,13 @@ class Model(tf.keras.Model):
         x = tf.math.floor((x + 0.5) * 256)
         return x.numpy()
     
+    def test_bijectivity(self):
+        for batch in self.train_set.batch(self.num_test_samples): break
+        z, loss = self.glow(batch[0], 'forward', batch[1], test=True)
+        x = self.glow(z, 'reverse', batch[1], test=True)
+        difference = tf.math.reduce_mean(tf.math.abs(batch[0] - x))
+        return np.round(difference.numpy(), 3)
+    
     def plot_examples(self, temperature=0.3):
         examples = self.generate(increment=True, temperature=temperature)
         plt.figure(figsize=(20,8))
@@ -57,15 +65,19 @@ class Model(tf.keras.Model):
     
     def _run_fit(self, batch_size, num_epochs):
         epoch = 0
-        template = 'Epoch {}: NLL_BPD = {}'
+        template_1 = 'Epoch {}: NLL_BPD = {}'
+        template_2 = 'Epoch {}: NLL_BPD = {}, Bijectivity Difference = {}'
         for batch in self.train_set.batch(batch_size).prefetch(1):
             if epoch > num_epochs: break
             epoch = epoch + 1
             self._train_step(batch)
-            train_accuracy = self.train_accuracy.result().numpy()
-            print(template.format(epoch, np.round(train_accuracy, 3)))
+            train_accuracy = np.round(self.train_accuracy.result().numpy(), 3)
             if epoch%50 == 0: 
+                difference = self.test_bijectivity()
+                print(template_2.format(epoch, train_accuracy, difference))
                 self.plot_examples()
+            else:
+                print(template_1.format(epoch, train_accuracy))
     
     def _initialise(self):
         self.glow = GlowMNIST(num_levels=5, 
