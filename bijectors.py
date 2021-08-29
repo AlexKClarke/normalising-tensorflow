@@ -198,8 +198,7 @@ class AffineCoupling(tf.keras.layers.Layer):
         x = self.activation(x)
         x = self.conv3(x)
         log_s, t = tf.split(x, num_or_size_splits=2, axis=3)
-        log_s = tf.clip_by_value(log_s, 1E-32, 1E32)
-        s = tf.math.exp(log_s)
+        s = tf.math.exp(log_s**2)
         return s, t
         
     def _forward(self, x, y):
@@ -386,7 +385,7 @@ class ExitFunction(tf.keras.layers.Layer):
         return z_l, log_prob_sum
         
     def _reverse(self, x, y, temperature, test):
-        mean, std = self._get_params(x, y)
+        mean, std = self._get_params(x, y, temperature)
         if test:
             sample = self.retain
         else:
